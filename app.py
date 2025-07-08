@@ -73,7 +73,7 @@ def encode_image_to_base64(image):
     buffer.seek(0)
     return base64.b64encode(buffer.getvalue()).decode()
 
-def generate_bathroom_visualization(original_image, selected_tile, client):
+def generate_bathroom_visualization(original_image, selected_tile, client, tile_name=""):
     """Generate bathroom visualization with new tiles using gpt-4.1 responses API"""
     
     try:
@@ -98,9 +98,11 @@ Same plumbing fixture styles and finishes
 
 ONLY CHANGE:
 
-Replace wall tiles with the new tile pattern/style from reference image
-Apply new tiles ONLY to wall surfaces that currently have tiles
-Maintain realistic lighting reflections on new tile surfaces
+Replace wall tiles with the new wall panel system from reference image
+Apply new panels ONLY to wall surfaces that currently have tiles
+Show panels as large, seamless surfaces without visible joints or grout lines
+Maintain realistic lighting reflections on new panel surfaces
+Panels should appear as continuous, smooth wall covering
 
 TECHNICAL SPECIFICATIONS:
 
@@ -109,8 +111,18 @@ Quality: Photorealistic interior rendering
 Lighting: Match original photo's natural lighting exactly
 Perspective: Keep identical camera angle and framing
 
-IMPORTANT: This is a tile material substitution only - do not upgrade, modernize, or improve any other elements of the bathroom.
+IMPORTANT: This is a wall panel material substitution only - do not upgrade, modernize, or improve any other elements of the bathroom. The new wall covering should appear as seamless panels without panel joints or grout lines.
         """
+        
+        # Add finish-specific instructions to the prompt based on the tile name
+        finish_instruction = ""
+        tile_name_lower = tile_name.lower()
+        if "glans" in tile_name_lower:
+            finish_instruction = "\n\nFINISH-SPECIFIC REQUIREMENT: The new wall panels must have a glossy, high-shine finish. Ensure that reflections on the panels are sharp, clear, and accurately represent the lighting in the room, similar to polished marble or glass."
+        elif "mat" in tile_name_lower:
+            finish_instruction = "\n\nFINISH-SPECIFIC REQUIREMENT: The new wall panels must have a matte, non-reflective finish. Ensure that light on the panels is diffused and soft, with no sharp or clear reflections, similar to honed stone or a sandblasted surface."
+
+        prompt += finish_instruction
         
         # Use the responses.create API with gpt-4.1
         response = client.responses.create(
@@ -202,19 +214,80 @@ def main():
         st.header("🏠 Kies je tegels")
         
         # Option 1: Upload custom tile image
-        st.subheader("Upload eigen tegelafbeelding")
-        uploaded_tile = st.file_uploader(
-            "Upload een foto van de gewenste tegels",
-            type=['png', 'jpg', 'jpeg'],
-            key="tile_upload"
+        #st.subheader("Upload eigen tegelafbeelding")
+        #uploaded_tile = st.file_uploader(
+        #    "Upload een foto van de gewenste tegels",
+        ##    type=['png', 'jpg', 'jpeg'],
+        #    key="tile_upload"
+        #)
+        
+        #st.markdown("<p style='text-align: center; font-weight: bold;'>OF</p>", unsafe_allow_html=True)
+
+        # Option 2: Choose from a predefined list
+        st.subheader("Kies een wandpaneel uit de lijst")
+
+        # Define tile options (name -> image path)
+        # TODO: Zorg ervoor dat de afbeeldingspaden correct zijn en de bestanden bestaan.
+        tile_options = {
+            "--- Selecteer een wandpaneel ---": None,
+            "PVC Hoogglans Calacatta Wit": "tiles/pvc_hoogglans_calacatta_wit.jpg",
+            "PVC Hoogglans Bianco Venato Wit": "tiles/pvc_hoogglans_bianco_venato_wit.jpg",
+            "PVC Hoogglans Carrara Wit": "tiles/pvc_hoogglans_carrara_wit.jpg",
+            "PVC Hoogglans Effen Wit": "tiles/pvc_hoogglans_effen_wit.jpg",
+            "PVC Hoogglans Eclipse Marble": "tiles/pvc_hoogglans_eclipse_marble.jpg",
+            "PVC Hoogglans Glazed Taupe Marble": "tiles/pvc_hoogglans_glazed_taupe_marble.jpg",
+            "PVC Hoogglans Grigio Orobico Gold": "tiles/pvc_hoogglans_grigio_orobico_gold.jpg",
+            "PVC Hoogglans Marquina Zwart": "tiles/pvc_hoogglans_marquina_zwart.jpg",
+            "PVC Hoogglans Onyx Grigio": "tiles/pvc_hoogglans_onyx_grigio.jpg",
+            "PVC Hoogglans Stone Marble": "tiles/pvc_hoogglans_stone_marble.jpg",
+            "PVC Silver Wave Glans Grijs": "tiles/pvc_silver_wave_glans_grijs.jpg",
+            "PVC Carnico Glans Grijs": "tiles/pvc_carnico_glans_grijs.jpg",
+            "PVC Calacatta Gold Matte": "tiles/pvc_calacatta_gold_matte.jpg",
+            "PVC Carnico Mat Grijs": "tiles/pvc_carnico_mat_grijs.jpg",
+            "PVC Crema Marfil Mat Beige": "tiles/pvc_crema_marfil_mat_beige.jpg",
+            "PVC Nero Marquina Gold Mat Zwart": "tiles/pvc_nero_marquina_gold_mat_zwart.jpg",
+            "PVC Pietra Grey Mat Grijs": "tiles/pvc_pietra_grey_mat_grijs.jpg",
+            "PVC Sandstone Mat Beige": "tiles/pvc_sandstone_mat_beige.jpg",
+            "PVC Taupe Marble Matte": "tiles/pvc_taupe_marble_matte.jpg",
+            "SPC Beton Look Mat Grijs": "tiles/spc_beton_look_mat_grijs.jpg",
+            "SPC Breccia Pernice Mat": "tiles/spc_breccia_pernice_mat.jpg",
+            "SPC Carrara Mat Grijs": "tiles/spc_carrara_mat_grijs.jpg",
+            "SPC Carrara Matte White": "tiles/spc_carrara_matte_white.jpg",
+            "SPC Crema Marfil Mat Beige": "tiles/spc_crema_marfil_mat_beige.jpg",
+            "SPC Desert Mist Mat Taupe Beige": "tiles/spc_desert_mist_mat_taupe_beige.jpg",
+            "SPC Emperador Dark Mat Bruin": "tiles/spc_emperador_dark_mat_bruin.jpg",
+            "SPC Forest Slate Mat Groen Bruin": "tiles/spc_forest_slate_mat_groen_bruin.jpg",
+            "SPC Granite Mist Matte": "tiles/spc_granite_mist_matte.jpg",
+            "SPC Marmer Mat Beige Taupe": "tiles/spc_marmer_mat_beige_taupe.jpg",
+            "SPC Rustic Copper Stone Mat Koper": "tiles/spc_rustic_copper_stone_mat_koper.jpg",
+            "SPC Rustic Stone Mat": "tiles/spc_rustic_stone_mat.jpg",
+            "SPC Serpeggiante Marble Mat Beige Groen": "tiles/spc_serpeggiante_marble_mat_beige_groen.jpg",
+            "SPC Silk Marble Matte": "tiles/spc_silk_marble_matte.jpg",
+            "SPC Smoky Granite Matte": "tiles/spc_smoky_granite_matte.jpg",
+            "SPC Stone Grey Mat Grijs": "tiles/spc_stone_grey_mat_grijs.jpg",
+        }
+        
+        selected_tile_name = st.selectbox(
+            "Kies een wandpaneel",
+            options=list(tile_options.keys())
         )
         
-
+        # Determine which tile to use (uploaded or selected)
+        final_tile_image = None
         
-        # Display selected tile
-        if uploaded_tile:
-            tile_image = Image.open(uploaded_tile)
-            st.image(tile_image, caption="Gekozen tegels", width=None)
+        #if uploaded_tile:
+        #    final_tile_image = Image.open(uploaded_tile)
+        #    st.image(final_tile_image, caption="Gekozen tegel (upload)", width=None)
+        if selected_tile_name != "--- Selecteer een wandpaneel ---":
+            tile_path = tile_options[selected_tile_name]
+            try:
+                final_tile_image = Image.open(tile_path)
+                st.image(final_tile_image, caption=f"Gekozen wandpaneel: {selected_tile_name}", width=None)
+            except FileNotFoundError:
+                st.warning(f"Afbeelding voor '{selected_tile_name}' niet gevonden. Zorg dat het bestand op `{tile_path}` staat.")
+                # Create a placeholder image if file not found
+                final_tile_image = Image.new('RGB', (200, 200), color = 'grey')
+                st.image(final_tile_image, caption=f"Placeholder voor {selected_tile_name}", width=None)
 
     
     # Generate button
@@ -223,18 +296,23 @@ def main():
     
     with col_center:
         if st.button("✨ Genereer Visualisatie", type="primary"):
-            if uploaded_bathroom and uploaded_tile:
+            if uploaded_bathroom and final_tile_image:
                 
                 with st.spinner("Aan het genereren van je nieuwe badkamer ontwerp..."):
                     
-                    # Use uploaded tile
-                    final_tile_image = Image.open(uploaded_tile)
-           
+                    # Determine tile name for prompt modification.
+                    # This only applies when a tile is selected from the list.
+                    tile_name_for_prompt = ""
+                    #if not uploaded_tile and selected_tile_name != "--- Selecteer een wandpaneel ---":
+                    if selected_tile_name != "--- Selecteer een wandpaneel ---":
+                        tile_name_for_prompt = selected_tile_name
+
                     # Generate the visualization
                     result_image = generate_bathroom_visualization(
                         Image.open(uploaded_bathroom), 
                         final_tile_image, 
-                        client
+                        client,
+                        tile_name=tile_name_for_prompt
                     )
                     
                     if result_image:
@@ -251,7 +329,7 @@ def main():
                             st.image(Image.open(uploaded_bathroom), width=None)
                         
                         with result_col2:
-                            st.subheader("Na - Met nieuwe tegels")
+                            st.subheader("Na - Met nieuwe wandpanelen")
                             st.image(result_image, width=None)
                         
                         # Download option
@@ -271,7 +349,7 @@ def main():
                         )
                         
             else:
-                st.warning("⚠️ Upload eerst een badkamer foto en kies tegels om te beginnen!")
+                st.warning("⚠️ Upload eerst een badkamer foto en kies een wandpaneel om te beginnen!")
 
 
     
