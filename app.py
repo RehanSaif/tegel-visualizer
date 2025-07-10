@@ -83,7 +83,7 @@ def generate_bathroom_visualization(original_image, selected_tile, client, tile_
         
         # Create the prompt
         prompt = """
-        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, flooring, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
+        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, bathtub, flooring, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
 CRITICAL REQUIREMENTS - DO NOT CHANGE:
 Keep 100% identical:
 
