@@ -83,7 +83,7 @@ def generate_bathroom_visualization(original_image, selected_tile, client, tile_
         
         # Create the prompt
         prompt = """
-        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, bathtub, flooring, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
+        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
 CRITICAL REQUIREMENTS - DO NOT CHANGE:
 Keep 100% identical:
 
@@ -91,7 +91,7 @@ Exact positions of toilet, sink, bathtub, and all fixtures
 Same lighting conditions, shadows, and brightness levels
 Identical spatial dimensions and camera perspective
 Same faucets, handles, and hardware in exact positions
-Same exact flooring material and color
+Same flooring material and color
 Same window size and position
 Same overall room condition and age
 Same plumbing fixture styles and finishes
@@ -99,10 +99,11 @@ Same plumbing fixture styles and finishes
 ONLY CHANGE:
 
 Replace wall tiles with the new wall panel system from reference image
-Apply new panels ONLY to wall surfaces that currently have tiles
+Apply new panels ONLY to vertical room wall surfaces that currently have tiles
+DO NOT change tiles on bathtub surround, toilet area, or any fixture surfaces
 Show panels as large, seamless surfaces without visible joints or grout lines
 Maintain realistic lighting reflections on new panel surfaces
-Panels should appear as continuous, smooth wall covering
+Panels should appear as continuous, smooth wall covering on room walls only
 
 TECHNICAL SPECIFICATIONS:
 
@@ -111,7 +112,7 @@ Quality: Photorealistic interior rendering
 Lighting: Match original photo's natural lighting exactly
 Perspective: Keep identical camera angle and framing
 
-IMPORTANT: This is a wall panel material substitution only - do not upgrade, modernize, or improve any other elements of the bathroom. The new wall covering should appear as seamless panels without panel joints or grout lines.
+IMPORTANT: This is a wall panel material substitution only - do not upgrade, modernize, or improve any other elements of the bathroom. The new wall covering should appear as seamless panels without tile joints or grout lines.
         """
         
         # Add finish-specific instructions to the prompt based on the tile name
