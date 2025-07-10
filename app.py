@@ -73,66 +73,171 @@ def encode_image_to_base64(image):
     buffer.seek(0)
     return base64.b64encode(buffer.getvalue()).decode()
 
-def generate_bathroom_visualization(original_image, selected_tile, client, tile_name=""):
-    """Generate bathroom visualization with new tiles using gpt-4.1 responses API"""
+def get_finish_instruction(tile_name):
+    """Get finish-specific instruction based on tile name"""
+    if not tile_name:
+        return "Apply appropriate finish based on reference image"
+    
+    tile_name_lower = tile_name.lower()
+    if any(keyword in tile_name_lower for keyword in ["glans", "hoogglans"]):
+        return "Apply glossy, reflective finish with sharp, clear reflections that accurately show the room's lighting"
+    elif any(keyword in tile_name_lower for keyword in ["mat", "matte"]):
+        return "Apply matte, non-reflective finish with soft, diffused lighting and no sharp reflections"
+    else:
+        return "Apply finish matching the reference image characteristics"
+
+# def generate_with_inpainting_style(original_image, selected_tile, client, tile_name=""):
+#     """Use inpainting-style prompting to be more precise about what to change"""
+    
+#     try:
+#         bathroom_b64 = encode_image_to_base64(original_image)
+#         tile_b64 = encode_image_to_base64(selected_tile)
+        
+#         finish_instruction = get_finish_instruction(tile_name)
+        
+#         inpainting_prompt = f"""
+# INPAINTING TASK: Replace wall panel material in specific areas only, like digital inpainting.
+
+# STEP-BY-STEP INSTRUCTIONS:
+# 1. Analyze the bathroom image to identify main room wall surfaces (large vertical background walls)
+# 2. Keep EVERYTHING else exactly identical - preserve all fixtures, surfaces, and details
+# 3. Replace ONLY the main wall surfaces with the new panel material from reference
+# 4. Ensure seamless, grout-free, joint-free installation of panels
+
+# AREAS TO PRESERVE (copy exactly from original - DO NOT MODIFY):
+# ✓ Bathtub: ALL tiles/cladding on front, sides, and edges of bathtub
+# ✓ Toilet: ALL tiles/surfaces around toilet base and surrounding floor area
+# ✓ Floor: ALL flooring tiles throughout the entire room
+# ✓ Window: Exact size, position, frame, and glass
+# ✓ Lighting: Same shadows, brightness, and light direction
+# ✓ Hardware: All faucets, handles, towel bars, fixtures
+# ✓ Perspective: Exact same camera angle and viewpoint
+# ✓ Ceiling: All ceiling surfaces and features
+
+# AREAS TO REPLACE (only these specific areas):
+# → Main vertical wall surfaces in the background (large wall areas)
+# → Wall surfaces that are clearly separate from fixture areas
+# → Apply new panel material with completely seamless, continuous finish
+# → Show as smooth, uninterrupted surface with ZERO joints, grout lines, or seams
+# → Panels should appear as one continuous wall covering
+
+# TECHNICAL EXECUTION REQUIREMENTS:
+# - Photorealistic architectural photography quality
+# - Exact lighting preservation from original image
+# - {finish_instruction}
+# - Maintain all spatial relationships and proportions exactly
+# - No modernization, upgrading, or improvement of any elements
+
+# CRITICAL CONSTRAINT: Think of this as selectively replacing ONLY the wall covering material on main room walls while preserving every other element perfectly. This is precise material substitution, not renovation.
+# """
+        
+#         # Generate the image
+#         response = client.responses.create(
+#             model="gpt-4.1",
+#             input=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {"type": "input_text", "text": inpainting_prompt},
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{bathroom_b64}",
+#                         },
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{tile_b64}",
+#                         }
+#                     ],
+#                 }
+#             ],
+#             tools=[{"type": "image_generation"}],
+#         )
+        
+#         # Extract image generation results
+#         image_generation_calls = [
+#             output
+#             for output in response.output
+#             if output.type == "image_generation_call"
+#         ]
+        
+#         image_data = [output.result for output in image_generation_calls]
+        
+#         if image_data:
+#             # Get the base64 encoded image
+#             image_base64 = image_data[0]
+#             image_bytes = base64.b64decode(image_base64)
+            
+#             # Convert to PIL Image
+#             generated_image = Image.open(io.BytesIO(image_bytes))
+#             return generated_image
+#         else:
+#             # If no image was generated, show the text response
+#             st.error("Geen afbeelding gegenereerd. Antwoord van API:")
+#             if hasattr(response, 'output'):
+#                 for output in response.output:
+#                     if hasattr(output, 'content'):
+#                         st.write(output.content)
+#             return None
+#     except Exception as e:
+#         st.error(f"Fout bij het genereren van afbeelding: {str(e)}")
+#         return None
+
+def generate_with_ultra_specific_masking(original_image, selected_tile, client, tile_name=""):
+    """Use ultra-specific masking language to prevent fixture modification"""
     
     try:
-        # Convert images to base64
         bathroom_b64 = encode_image_to_base64(original_image)
         tile_b64 = encode_image_to_base64(selected_tile)
         
-        # Create the prompt
-        prompt = """
-        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
-CRITICAL REQUIREMENTS - DO NOT CHANGE:
-Keep 100% identical:
-
-Exact positions of toilet, sink, bathtub, and all fixtures
-Same lighting conditions, shadows, and brightness levels
-Identical spatial dimensions and camera perspective
-Same faucets, handles, and hardware in exact positions
-Same flooring material and color
-Same window size and position
-Same overall room condition and age
-Same plumbing fixture styles and finishes
-
-ONLY CHANGE:
-
-Replace wall tiles with the new wall panel system from reference image
-Apply new panels ONLY to vertical room wall surfaces that currently have tiles
-DO NOT change tiles on bathtub surround, toilet area, or any fixture surfaces
-Show panels as large, seamless surfaces without visible joints or grout lines
-Maintain realistic lighting reflections on new panel surfaces
-Panels should appear as continuous, smooth wall covering on room walls only
-
-TECHNICAL SPECIFICATIONS:
-
-Style: Architectural photography documentation
-Quality: Photorealistic interior rendering
-Lighting: Match original photo's natural lighting exactly
-Perspective: Keep identical camera angle and framing
-
-IMPORTANT: This is a wall panel material substitution only - do not upgrade, modernize, or improve any other elements of the bathroom. The new wall covering should appear as seamless panels without tile joints or grout lines.
-        """
+        finish_instruction = get_finish_instruction(tile_name)
         
-        # Add finish-specific instructions to the prompt based on the tile name
-        finish_instruction = ""
-        tile_name_lower = tile_name.lower()
-        if "glans" in tile_name_lower:
-            finish_instruction = "\n\nFINISH-SPECIFIC REQUIREMENT: The new wall panels must have a glossy, high-shine finish. Ensure that reflections on the panels are sharp, clear, and accurately represent the lighting in the room, similar to polished marble or glass."
-        elif "mat" in tile_name_lower:
-            finish_instruction = "\n\nFINISH-SPECIFIC REQUIREMENT: The new wall panels must have a matte, non-reflective finish. Ensure that light on the panels is diffused and soft, with no sharp or clear reflections, similar to honed stone or a sandblasted surface."
+        ultra_specific_prompt = f"""
+CRITICAL MASKING TASK: Apply new wall panels ONLY to specific masked areas.
 
-        prompt += finish_instruction
+MASKING RULES - ABSOLUTE BOUNDARIES:
+🚫 PROTECTED ZONES (NEVER TOUCH - KEEP 100% ORIGINAL):
+- Bathtub structure: ALL sides, front panel, edges, rim, and any tiles directly touching the bathtub
+- Toilet area: ALL surfaces within 50cm radius of toilet, including floor and wall tiles around toilet
+- Floor: ENTIRE floor surface throughout the room - no changes whatsoever
+- Window and frame: Complete window assembly and surrounding areas
+- All fixtures, hardware, pipes, faucets, handles, towel bars
+- Ceiling and any ceiling-mounted elements
+
+✅ MODIFICATION ZONE (ONLY THESE AREAS):
+- Large vertical wall surfaces that are clearly separated from fixtures
+- Main room background walls that do not touch or connect to bathtub or toilet
+- Wall areas that are at least 1 meter away from any fixture
+
+SPATIAL IDENTIFICATION PROCESS:
+1. Identify the bathtub location and mark ALL adjacent surfaces as PROTECTED
+2. Identify the toilet location and mark ALL surrounding surfaces as PROTECTED  
+3. Mark the floor as completely PROTECTED
+4. Find ONLY the main room walls that are isolated from fixtures
+5. Apply panels ONLY to these isolated wall areas
+
+PANEL APPLICATION REQUIREMENTS:
+- Show panels as seamless, continuous surface with ZERO joints or grout lines
+- {finish_instruction}
+- Maintain exact lighting from original photo
+- Apply ONLY to the identified safe wall zones
+
+TECHNICAL EXECUTION:
+- Photorealistic quality matching original
+- Preserve exact camera angle and perspective
+- No modernization or upgrades to any elements
+- Think of this as applying wallpaper to specific wall sections only
+
+VERIFICATION CHECK: Before applying panels, verify that NO part of the bathtub structure or toilet area will be modified. The bathtub must remain exactly as it is in the original photo.
+"""
         
-        # Use the responses.create API with gpt-4.1
+        # Generate the image
         response = client.responses.create(
             model="gpt-4.1",
             input=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "input_text", "text": prompt},
+                        {"type": "input_text", "text": ultra_specific_prompt},
                         {
                             "type": "input_image",
                             "image_url": f"data:image/png;base64,{bathroom_b64}",
@@ -157,23 +262,209 @@ IMPORTANT: This is a wall panel material substitution only - do not upgrade, mod
         image_data = [output.result for output in image_generation_calls]
         
         if image_data:
-            # Get the base64 encoded image
             image_base64 = image_data[0]
             image_bytes = base64.b64decode(image_base64)
-            
-            # Convert to PIL Image
             generated_image = Image.open(io.BytesIO(image_bytes))
             return generated_image
         else:
-            # If no image was generated, show the text response
-            st.error("Geen afbeelding gegenereerd. Antwoord van API:")
-            if hasattr(response, 'output') and hasattr(response.output, 'content'):
-                st.write(response.output.content)
+            st.error("Geen afbeelding gegenereerd.")
             return None
         
     except Exception as e:
         st.error(f"Fout bij het genereren van afbeelding: {str(e)}")
         return None
+
+
+# def generate_with_two_step_approach(original_image, selected_tile, client, tile_name=""):
+#     """Two-step approach: First analyze, then generate"""
+    
+#     try:
+#         bathroom_b64 = encode_image_to_base64(original_image)
+#         tile_b64 = encode_image_to_base64(selected_tile)
+        
+#         # Step 1: Spatial analysis
+#         analysis_prompt = """
+# SPATIAL ANALYSIS TASK:
+
+# Analyze this bathroom image and provide a detailed, factual description of:
+
+# 1. BATHTUB STRUCTURE AND CLADDING:
+#    - Precisely describe the bathtub's position.
+#    - Identify ALL surfaces that form the bathtub structure itself. This includes the front panel/apron, the side panels, and the top rim.
+#    - Describe the material/finish of these bathtub surfaces (e.g., 'tiled front panel', 'acrylic side'). THIS IS A CRITICAL DETAIL.
+
+# 2. TOILET LOCATION AND BOUNDARIES:
+#    - Where exactly is the toilet positioned?
+#    - What surfaces are around the toilet base?
+#    - What wall and floor areas are in the toilet zone?
+
+# 3. WALLS vs. FIXTURE CLADDING:
+#     - Distinguish between the main room walls and the tiles/panels attached to the bathtub.
+#     - Explicitly list which surfaces are 'main walls' (safe to change) and which are 'bathtub cladding' (must be preserved).
+
+# Your analysis must create a clear boundary between the room's walls and the bathtub's own surfaces.
+# """
+        
+#         # Get spatial analysis
+#         analysis_response = client.responses.create(
+#             model="gpt-4.1",
+#             input=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {"type": "input_text", "text": analysis_prompt},
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{bathroom_b64}",
+#                         }
+#                     ],
+#                 }
+#             ]
+#         )
+        
+#         # Extract analysis text (you could process this further)
+#         analysis_text = ""
+#         if hasattr(analysis_response, 'output'):
+#             for output in analysis_response.output:
+#                 if hasattr(output, 'content'):
+#                     analysis_text += str(output.content)
+        
+#         # Step 2: Generate with analysis context
+#         finish_instruction = get_finish_instruction(tile_name)
+        
+#         generation_prompt = f"""
+# PRECISION PANEL APPLICATION TASK:
+
+# You must follow the provided spatial analysis to avoid modifying fixtures.
+
+# ANALYSIS SUMMARY:
+# {analysis_text[:1000]}...
+
+# EXECUTION RULES (NON-NEGOTIABLE):
+# 1. **PROTECT BATHTUB:** Preserve the bathtub and ALL of its own surfaces (front panel, side panel, rim) EXACTLY as they appear in the original image. The analysis identifies these as 'bathtub cladding'. DO NOT change the material of the bathtub's panels.
+# 2. **MODIFY WALLS ONLY:** Apply the new panel material ONLY to the surfaces identified as 'main walls' in the analysis. These are the large, vertical background walls of the room itself.
+# 3. **SEAMLESS FINISH:** The new panels on the walls must be seamless, with no grout lines.
+# 4. {finish_instruction}
+# 5. Maintain photorealistic quality, original lighting, and camera perspective.
+
+# VERIFICATION: Before outputting the image, double-check that the bathtub's front and side panels are UNCHANGED from the original photo.
+# """
+        
+#         # Generate final image
+#         response = client.responses.create(
+#             model="gpt-4.1",
+#             input=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {"type": "input_text", "text": generation_prompt},
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{bathroom_b64}",
+#                         },
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{tile_b64}",
+#                         }
+#                     ],
+#                 }
+#             ],
+#             tools=[{"type": "image_generation"}],
+#         )
+        
+#         # Extract image
+#         image_generation_calls = [
+#             output for output in response.output
+#             if output.type == "image_generation_call"
+#         ]
+        
+#         if image_generation_calls:
+#             image_data = image_generation_calls[0].result
+#             image_bytes = base64.b64decode(image_data)
+#             return Image.open(io.BytesIO(image_bytes))
+        
+#         return None
+        
+#     except Exception as e:
+#         st.error(f"Fout bij het genereren van afbeelding: {str(e)}")
+#         return None
+
+
+# def generate_with_conservative_approach(original_image, selected_tile, client, tile_name=""):
+#     """Most conservative approach - only touch obvious wall areas"""
+    
+#     try:
+#         bathroom_b64 = encode_image_to_base64(original_image)
+#         tile_b64 = encode_image_to_base64(selected_tile)
+        
+#         finish_instruction = get_finish_instruction(tile_name)
+        
+#         conservative_prompt = f"""
+# CONSERVATIVE WALL PANEL APPLICATION:
+
+# TASK: Replace wall covering on ONLY the most obvious, safe wall areas.
+
+# ULTRA-CONSERVATIVE RULES:
+# 🔒 COMPLETELY OFF-LIMITS (DO NOT EVEN CONSIDER):
+# - Anything connected to or near the bathtub
+# - Anything connected to or near the toilet  
+# - Any horizontal surfaces (floor, bathtub rim, etc.)
+# - Any fixture-adjacent areas
+# - Window and window surrounds
+
+# 🎯 SAFE MODIFICATION ZONES (ONLY IF CLEARLY SEPARATE):
+# - Large, obvious background wall surfaces
+# - Wall areas that are visibly distant from any fixture
+# - Plain wall sections that clearly don't belong to fixtures
+
+# APPLICATION METHOD:
+# - Think like you're hanging wallpaper on a few select wall sections
+# - Only touch areas you're 100% certain are main room walls
+# - Show seamless panels with zero joints, grout, or texture lines
+# - {finish_instruction}
+# - Keep photorealistic quality and exact lighting
+
+# SAFETY FIRST: When in doubt, don't modify. Better to change too little than to accidentally modify fixture areas.
+
+# VERIFICATION: The bathtub should look exactly like the original photo - same color, same materials, same everything.
+# """
+        
+#         response = client.responses.create(
+#             model="gpt-4.1",
+#             input=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {"type": "input_text", "text": conservative_prompt},
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{bathroom_b64}",
+#                         },
+#                         {
+#                             "type": "input_image",
+#                             "image_url": f"data:image/png;base64,{tile_b64}",
+#                         }
+#                     ],
+#                 }
+#             ],
+#             tools=[{"type": "image_generation"}],
+#         )
+        
+#         image_generation_calls = [
+#             output for output in response.output
+#             if output.type == "image_generation_call"
+#         ]
+        
+#         if image_generation_calls:
+#             image_data = image_generation_calls[0].result
+#             image_bytes = base64.b64decode(image_data)
+#             return Image.open(io.BytesIO(image_bytes))
+        
+#         return None
+        
+#     except Exception as e:
+#         st.error(f"Fout bij het genereren van afbeelding: {str(e)}")
+#         return None
 
 def main():
     st.set_page_config(
@@ -214,21 +505,10 @@ def main():
     with col2:
         st.header("🏠 Kies je wandpanelen")
         
-        # Option 1: Upload custom tile image
-        #st.subheader("Upload eigen tegelafbeelding")
-        #uploaded_tile = st.file_uploader(
-        #    "Upload een foto van de gewenste tegels",
-        ##    type=['png', 'jpg', 'jpeg'],
-        #    key="tile_upload"
-        #)
-        
-        #st.markdown("<p style='text-align: center; font-weight: bold;'>OF</p>", unsafe_allow_html=True)
-
-        # Option 2: Choose from a predefined list
+        # Choose from a predefined list
         st.subheader("Kies een wandpaneel uit de lijst")
 
         # Define tile options (name -> image path)
-        # TODO: Zorg ervoor dat de afbeeldingspaden correct zijn en de bestanden bestaan.
         tile_options = {
             "--- Selecteer een wandpaneel ---": None,
             "PVC Hoogglans Calacatta Wit": "tiles/pvc_hoogglans_calacatta_wit.jpg",
@@ -273,12 +553,9 @@ def main():
             options=list(tile_options.keys())
         )
         
-        # Determine which tile to use (uploaded or selected)
+        # Determine which tile to use
         final_tile_image = None
         
-        #if uploaded_tile:
-        #    final_tile_image = Image.open(uploaded_tile)
-        #    st.image(final_tile_image, caption="Gekozen tegel (upload)", width=None)
         if selected_tile_name != "--- Selecteer een wandpaneel ---":
             tile_path = tile_options[selected_tile_name]
             try:
@@ -287,34 +564,37 @@ def main():
             except FileNotFoundError:
                 st.warning(f"Afbeelding voor '{selected_tile_name}' niet gevonden. Zorg dat het bestand op `{tile_path}` staat.")
                 # Create a placeholder image if file not found
-                final_tile_image = Image.new('RGB', (200, 200), color = 'grey')
+                final_tile_image = Image.new('RGB', (200, 200), color='grey')
                 st.image(final_tile_image, caption=f"Placeholder voor {selected_tile_name}", width=None)
 
-    
     # Generate button
     st.markdown("---")
     col_center = st.columns([1, 2, 1])[1]
     
     with col_center:
-        if st.button("✨ Genereer Visualisatie", type="primary"):
+        # Simplified generation button
+        if st.button("✨ Genereer Visualisatie", type="primary", use_container_width=True):
             if uploaded_bathroom and final_tile_image:
                 
-                with st.spinner("Aan het genereren van je nieuwe badkamer ontwerp..."):
+                with st.spinner("Bezig met genereren via de 'Ultra Specifiek' methode..."):
                     
-                    # Determine tile name for prompt modification.
-                    # This only applies when a tile is selected from the list.
-                    tile_name_for_prompt = ""
-                    #if not uploaded_tile and selected_tile_name != "--- Selecteer een wandpaneel ---":
-                    if selected_tile_name != "--- Selecteer een wandpaneel ---":
-                        tile_name_for_prompt = selected_tile_name
+                    try:
+                        # Determine tile name for prompt modification
+                        tile_name_for_prompt = ""
+                        if selected_tile_name != "--- Selecteer een wandpaneel ---":
+                            tile_name_for_prompt = selected_tile_name
 
-                    # Generate the visualization
-                    result_image = generate_bathroom_visualization(
-                        Image.open(uploaded_bathroom), 
-                        final_tile_image, 
-                        client,
-                        tile_name=tile_name_for_prompt
-                    )
+                        # Generate with the best method
+                        result_image = generate_with_ultra_specific_masking(
+                            Image.open(uploaded_bathroom), 
+                            final_tile_image, 
+                            client,
+                            tile_name=tile_name_for_prompt
+                        )
+                    
+                    except Exception as e:
+                        st.error(f"Er is een fout opgetreden bij het genereren: {str(e)}")
+                        result_image = None
                     
                     if result_image:
                         st.success("✅ Visualisatie gegenereerd!")
@@ -330,7 +610,7 @@ def main():
                             st.image(Image.open(uploaded_bathroom), width=None)
                         
                         with result_col2:
-                            st.subheader("Na - Met nieuwe wandpanelen")
+                            st.subheader("Na - Ultra Specifiek")
                             st.image(result_image, width=None)
                         
                         # Download option
@@ -344,16 +624,15 @@ def main():
                         st.download_button(
                             label="💾 Download resultaat",
                             data=img_bytes,
-                            file_name="badkamer_nieuwe_panelen.png",
+                            file_name="badkamer_visualisatie.png",
                             mime="image/png",
-                            type="primary"
+                            type="primary",
+                            use_container_width=True
                         )
                         
             else:
                 st.warning("⚠️ Upload eerst een badkamer foto en kies een wandpaneel om te beginnen!")
 
-
-    
     # Footer
     st.markdown("---")
     st.markdown("*Gemaakt door DeltaFlow AI*")
