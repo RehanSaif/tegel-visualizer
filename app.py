@@ -83,7 +83,7 @@ def generate_bathroom_visualization(original_image, selected_tile, client, tile_
         
         # Create the prompt
         prompt = """
-        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
+        Generate a photorealistic bathroom image that maintains EXACTLY the same layout, flooring, fixtures, and overall appearance as the original bathroom photo, with ONLY the wall tiles changed to match the new tile style shown in the reference image.
 CRITICAL REQUIREMENTS - DO NOT CHANGE:
 Keep 100% identical:
 
@@ -91,7 +91,7 @@ Exact positions of toilet, sink, bathtub, and all fixtures
 Same lighting conditions, shadows, and brightness levels
 Identical spatial dimensions and camera perspective
 Same faucets, handles, and hardware in exact positions
-Same flooring material and color
+Same exact flooring material and color
 Same window size and position
 Same overall room condition and age
 Same plumbing fixture styles and finishes
@@ -185,7 +185,7 @@ def main():
         st.stop()
     
     st.title("🛁 Badkamer Tegel Visualizer")
-    st.markdown("Upload een foto van je badkamer en kies nieuwe tegels om te zien hoe het eruit zou zien!")
+    st.markdown("Upload een foto van je badkamer en kies nieuwe wandpanelen om te zien hoe het eruit zou zien!")
     
     # Initialize OpenAI client
     try:
@@ -211,7 +211,7 @@ def main():
             st.image(bathroom_image, caption="Je badkamer", width=None)
     
     with col2:
-        st.header("🏠 Kies je tegels")
+        st.header("🏠 Kies je wandpanelen")
         
         # Option 1: Upload custom tile image
         #st.subheader("Upload eigen tegelafbeelding")
@@ -343,7 +343,7 @@ def main():
                         st.download_button(
                             label="💾 Download resultaat",
                             data=img_bytes,
-                            file_name="badkamer_nieuwe_tegels.png",
+                            file_name="badkamer_nieuwe_panelen.png",
                             mime="image/png",
                             type="primary"
                         )
