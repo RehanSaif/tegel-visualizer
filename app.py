@@ -176,7 +176,7 @@ IMPORTANT: This is a wall panel material substitution only - do not upgrade, mod
 
 def main():
     st.set_page_config(
-        page_title="Badkamer Tegel Visualizer",
+        page_title="Badkamer Wandpaneel Visualizer",
         page_icon="🛁",
         layout="wide"
     )
@@ -184,7 +184,7 @@ def main():
     if not check_password():
         st.stop()
     
-    st.title("🛁 Badkamer Tegel Visualizer")
+    st.title("🛁 Badkamer Wandpaneel Visualizer")
     st.markdown("Upload een foto van je badkamer en kies nieuwe wandpanelen om te zien hoe het eruit zou zien!")
     
     # Initialize OpenAI client
